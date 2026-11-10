@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gate 1: Entry Gate</title>
+    <style>
+        body {
+            background-color: #0b1120;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 40px;
+            width: 480px;
+            text-align: center;
+            border: 2px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .status-idle { color: #94a3b8; font-size: 24px; margin-bottom: 20px; }
+        .status-active { color: #22c55e; font-size: 28px; font-weight: bold; margin-bottom: 15px; }
+        .plate-box {
+            background: #0f172a;
+            border: 2px dashed #38bdf8;
+            padding: 15px;
+            font-size: 32px;
+            letter-spacing: 2px;
+            font-weight: bold;
+            color: #38bdf8;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .rate-notice {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="color: #cbd5e1; margin-top: 0;">Automated Parking System</h2>
+        
+        <div id="idle-view">
+            <div class="status-idle">Please Approach Gate</div>
+            <p style="color: #64748b;">Scanning license plate...</p>
+        </div>
+
+        <div id="detected-view" style="display: none;">
+            <div class="status-active">Car Recognized!</div>
+            <div class="plate-box" id="entry-plate">---</div>
+            <h3 style="color: #f1f5f9;">Please enter and proceed to parking</h3>
+            <div class="rate-notice">Rate: 20 Taka / Hour</div>
+        </div>
+    </div>
+
+    <script>
+        let lastSeenId = 0;
+        async function checkEntry() {
+            try {
+                const res = await fetch('/api/latest_entry');
+                const data = await res.json();
+                if (data && data.id && data.id !== lastSeenId) {
+                    lastSeenId = data.id;
+                    document.getElementById('idle-view').style.display = 'none';
+                    document.getElementById('detected-view').style.display = 'block';
+                    document.getElementById('entry-plate').innerText = data.plate;
+
+                    // Reset back to idle scan screen after 6 seconds
+                    setTimeout(() => {
+                        document.getElementById('detected-view').style.display = 'none';
+                        document.getElementById('idle-view').style.display = 'block';
+                    }, 6000);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        setInterval(checkEntry, 1000);
+    </script>
+</body>
+</html>
