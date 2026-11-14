@@ -2,74 +2,195 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Touchless Parking Management</title>
+    <title>Admin Parking Dashboard</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        h1 { text-align: center; color: #38bdf8; margin-bottom: 25px; }
-        .camera-grid { display: flex; gap: 20px; justify-content: center; margin-bottom: 30px; }
-        .cam-box { background: #1e293b; padding: 15px; border-radius: 10px; border: 1px solid #334155; }
-        .cam-box h3 { margin-top: 0; text-align: center; color: #cbd5e1; }
-        .cam-box img { width: 440px; height: 320px; object-fit: cover; border-radius: 6px; }
-        table { width: 920px; margin: 0 auto; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; }
-        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; }
-        th { background: #0284c7; color: white; }
-        .status-active { color: #38bdf8; font-weight: bold; }
-        .status-completed { color: #4ade80; font-weight: bold; }
+        body {
+            background-color: #0b1120;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 25px;
+        }
+        h1 {
+            text-align: center;
+            color: #38bdf8;
+            margin-bottom: 25px;
+        }
+        .cams-container {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+            margin-bottom: 35px;
+        }
+        .cam-box {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            width: 480px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .cam-box h3 {
+            margin-top: 0;
+            color: #e2e8f0;
+        }
+        .cam-box img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #0f172a;
+        }
+        .table-container {
+            max-width: 1020px;
+            margin: 0 auto;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #334155;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #334155;
+        }
+        th {
+            background-color: #0f172a;
+            color: #38bdf8;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        tr:hover {
+            background-color: #263349;
+        }
+        .badge-active {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .badge-completed {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .btn-delete {
+            background: #ef4444;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .btn-delete:hover {
+            background: #dc2626;
+        }
     </style>
 </head>
 <body>
 
     <h1>Automated Parking Management System</h1>
 
-    <div class="camera-grid">
+    <div class="cams-container">
         <div class="cam-box">
             <h3>Gate 1: Entry Camera</h3>
-            <img src="{{ url_for('video_entry') }}" alt="Entry Feed">
+            <img src="/video_entry" alt="Entry Camera Stream">
         </div>
         <div class="cam-box">
             <h3>Gate 2: Exit Camera</h3>
-            <img src="{{ url_for('video_exit') }}" alt="Exit Feed">
+            <img src="/video_exit" alt="Exit Camera Stream">
         </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Plate Number</th>
-                <th>Entry Time</th>
-                <th>Exit Time</th>
-                <th>Duration (min)</th>
-                <th>Total (BDT)</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-    </table>
+    <div class="table-container">
+        <h3 style="margin-top: 0; color: #cbd5e1;">Recent Parking Logs</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Plate Number</th>
+                    <th>Entry Time</th>
+                    <th>Exit Time</th>
+                    <th>Duration (Min)</th>
+                    <th>Paid (Taka)</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="records-body">
+                <!-- Rows populated automatically -->
+            </tbody>
+        </table>
+    </div>
 
     <script>
-        async function fetchLogs() {
-            const res = await fetch('/api/records');
-            const data = await res.json();
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row[0]}</td>
-                    <td><b>${row[1]}</b></td>
-                    <td>${row[2] || '-'}</td>
-                    <td>${row[3] || '-'}</td>
-                    <td>${row[4] ? row[4] : '-'}</td>
-                    <td>${row[5] ? row[5] + ' /=' : '-'}</td>
-                    <td class="${row[6] === 'ACTIVE' ? 'status-active' : 'status-completed'}">${row[6]}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+        function formatTime(ts) {
+            if (!ts) return "-";
+            return ts.split("T")[1]?.split(".")[0] || ts;
         }
-        setInterval(fetchLogs, 2000);
-        fetchLogs();
+
+        async function fetchRecords() {
+            try {
+                const res = await fetch('/api/records');
+                const rows = await res.json();
+                const tbody = document.getElementById('records-body');
+                tbody.innerHTML = "";
+
+                rows.forEach(row => {
+                    const [id, plate, entry, exit, duration, paid, status] = row;
+                    const badgeClass = status === 'ACTIVE' ? 'badge-active' : 'badge-completed';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>#${id}</td>
+                        <td style="font-weight: bold; color: #f8fafc;">${plate}</td>
+                        <td>${formatTime(entry)}</td>
+                        <td>${formatTime(exit)}</td>
+                        <td>${duration !== null ? duration : '-'}</td>
+                        <td style="color: #4ade80; font-weight: bold;">${paid} Taka</td>
+                        <td><span class="${badgeClass}">${status}</span></td>
+                        <td>
+                            <button class="btn-delete" onclick="deleteRecord(${id})">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error("Error fetching records:", e);
+            }
+        }
+
+        async function deleteRecord(id) {
+            if (!confirm(`Are you sure you want to delete parking record #${id}?`)) return;
+
+            try {
+                const res = await fetch(`/api/delete/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    fetchRecords();
+                }
+            } catch (e) {
+                console.error("Failed to delete record:", e);
+            }
+        }
+
+        fetchRecords();
+        setInterval(fetchRecords, 2000);
     </script>
+
 </body>
 </html>
