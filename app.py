@@ -10,7 +10,7 @@ import easyocr
 app = Flask(__name__)
 
 # --- CAMERA CONFIGURATION ---
-ENTRY_CAM_SRC = "http://172.20.10.8:8080/video"
+ENTRY_CAM_SRC = 0
 EXIT_CAM_SRC = "http://172.20.10.2:8080/video"
 
 # 20 Taka per hour (minimum charge 5 Taka for short test)
@@ -19,6 +19,9 @@ RATE_PER_HOUR = 20.0
 # --- EVENT STATE HOLDERS FOR USER SCREENS ---
 latest_entry_event = None
 latest_exit_event = None
+
+# --- IOT PARKING SLOTS STATE (0 = Empty, 1 = Occupied via IR Sensors) ---
+parking_slots = [0, 0, 0, 0]
 
 # --- LOAD MODELS ---
 print("[INFO] Loading YOLO and EasyOCR...")
@@ -70,19 +73,39 @@ def read_plate_text(crop):
     return text if len(text) >= 4 else None
 
 def process_entry(plate_number):
-    global latest_entry_event
+    global latest_entry_event, parking_slots
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM parking_logs WHERE plate_number = ? AND status = 'ACTIVE'", (plate_number,))
     if not cursor.fetchone():
+        # Find first empty slot based on physical IR sensors
+        assigned_slot = None
+        for i in range(4):
+            if parking_slots[i] == 0:
+                assigned_slot = i + 1  # Slot 1 to 4
+                break
+
+        if assigned_slot is None:
+            latest_entry_event = {
+                "id": int(time.time()),
+                "status": "FULL",
+                "plate": plate_number,
+                "slot": None
+            }
+            print(f"[ENTRY BLOCKED - FULL] Plate: {plate_number}")
+            conn.close()
+            return
+
         now = datetime.now()
         cursor.execute("INSERT INTO parking_logs (plate_number, entry_time) VALUES (?, ?)", (plate_number, now))
         conn.commit()
         log_id = cursor.lastrowid
-        print(f"[ENTRY LOGGED] Plate: {plate_number}")
+        print(f"[ENTRY LOGGED] Plate: {plate_number} -> Assigned Slot {assigned_slot}")
         latest_entry_event = {
             "id": log_id,
+            "status": "OPEN",
             "plate": plate_number,
+            "slot": assigned_slot,
             "time": now.strftime("%H:%M:%S")
         }
     conn.close()
@@ -283,7 +306,19 @@ def process_mobile_payment():
         "valid_until": new_paid_until.strftime("%H:%M:%S")
     })
 
-# --- DASHBOARD & KIOSK APIs ---
+# --- DASHBOARD, KIOSK & IOT APIs ---
+@app.route('/api/update_slots', methods=['POST'])
+def update_slots():
+    global parking_slots
+    data = request.json
+    if data and "slots" in data and len(data["slots"]) == 4:
+        parking_slots = data["slots"]
+    return jsonify({"success": True, "slots": parking_slots})
+
+@app.route('/api/slots')
+def get_slots():
+    return jsonify({"slots": parking_slots})
+
 @app.route('/api/latest_entry')
 def get_latest_entry():
     return jsonify(latest_entry_event or {})

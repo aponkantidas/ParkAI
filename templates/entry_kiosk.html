@@ -36,6 +36,16 @@
             border-radius: 10px;
             margin: 20px 0;
         }
+        .slot-banner {
+            background: rgba(250, 204, 21, 0.15);
+            border: 1px solid #facc15;
+            color: #facc15;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
         .rate-notice {
             background: rgba(56, 189, 248, 0.1);
             color: #38bdf8;
@@ -56,9 +66,9 @@
         </div>
 
         <div id="detected-view" style="display: none;">
-            <div class="status-active">Car Recognized!</div>
+            <div class="status-active" id="entry-status">Car Recognized!</div>
             <div class="plate-box" id="entry-plate">---</div>
-            <h3 style="color: #f1f5f9;">Please enter and proceed to parking</h3>
+            <div class="slot-banner" id="entry-msg">Please park at SLOT --</div>
             <div class="rate-notice">Rate: 20 Taka / Hour</div>
         </div>
     </div>
@@ -75,7 +85,25 @@
                     document.getElementById('detected-view').style.display = 'block';
                     document.getElementById('entry-plate').innerText = data.plate;
 
-                    // Reset back to idle scan screen after 6 seconds
+                    const statusEl = document.getElementById('entry-status');
+                    const msgEl = document.getElementById('entry-msg');
+
+                    if (data.status === "FULL") {
+                        statusEl.innerText = "PARKING FULL!";
+                        statusEl.style.color = "#ef4444";
+                        msgEl.style.color = "#f87171";
+                        msgEl.style.borderColor = "#ef4444";
+                        msgEl.style.background = "rgba(239, 68, 68, 0.15)";
+                        msgEl.innerText = "No Empty Slots Available";
+                    } else {
+                        statusEl.innerText = "Car Recognized!";
+                        statusEl.style.color = "#22c55e";
+                        msgEl.style.color = "#facc15";
+                        msgEl.style.borderColor = "#facc15";
+                        msgEl.style.background = "rgba(250, 204, 21, 0.15)";
+                        msgEl.innerText = `Please park at SLOT ${data.slot}`;
+                    }
+
                     setTimeout(() => {
                         document.getElementById('detected-view').style.display = 'none';
                         document.getElementById('idle-view').style.display = 'block';
