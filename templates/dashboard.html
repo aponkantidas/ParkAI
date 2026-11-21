@@ -16,28 +16,49 @@
             color: #38bdf8;
             margin-bottom: 20px;
         }
-        .slots-bar {
+        .floors-wrapper {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 25px;
             flex-wrap: wrap;
             max-width: 1020px;
             margin: 0 auto 25px auto;
+        }
+        .floor-group {
+            background: #131c31;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        .floor-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+        .slots-bar {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
         .slot-card {
             background: #1e293b;
             border: 2px solid #22c55e;
             border-radius: 10px;
-            padding: 12px 24px;
+            padding: 12px 18px;
             text-align: center;
-            min-width: 140px;
+            min-width: 115px;
         }
         .slot-card.occupied {
             border-color: #ef4444;
             background: rgba(239, 68, 68, 0.15);
         }
-        .slot-title { font-size: 14px; color: #94a3b8; font-weight: bold; }
-        .slot-state { font-size: 18px; font-weight: bold; margin-top: 4px; color: #4ade80; }
+        .slot-title { font-size: 13px; color: #94a3b8; font-weight: bold; }
+        .slot-state { font-size: 16px; font-weight: bold; margin-top: 4px; color: #4ade80; }
         .slot-card.occupied .slot-state { color: #f87171; }
         .cams-container {
             display: flex;
@@ -109,11 +130,24 @@
 
     <h1>Automated Parking Management System</h1>
 
-    <div class="slots-bar" id="slots-bar">
-        <div class="slot-card" id="slot-0"><div class="slot-title">SLOT 1</div><div class="slot-state">EMPTY</div></div>
-        <div class="slot-card" id="slot-1"><div class="slot-title">SLOT 2</div><div class="slot-state">EMPTY</div></div>
-        <div class="slot-card" id="slot-2"><div class="slot-title">SLOT 3</div><div class="slot-state">EMPTY</div></div>
-        <div class="slot-card" id="slot-3"><div class="slot-title">SLOT 4</div><div class="slot-state">EMPTY</div></div>
+    <div class="floors-wrapper">
+        <div class="floor-group">
+            <div class="floor-label">Ground Floor</div>
+            <div class="slots-bar">
+                <div class="slot-card" id="slot-0"><div class="slot-title">SLOT 1</div><div class="slot-state">EMPTY</div></div>
+                <div class="slot-card" id="slot-1"><div class="slot-title">SLOT 2</div><div class="slot-state">EMPTY</div></div>
+                <div class="slot-card" id="slot-2"><div class="slot-title">SLOT 3</div><div class="slot-state">EMPTY</div></div>
+                <div class="slot-card" id="slot-3"><div class="slot-title">SLOT 4</div><div class="slot-state">EMPTY</div></div>
+            </div>
+        </div>
+
+        <div class="floor-group">
+            <div class="floor-label" style="color: #38bdf8;">Second Floor</div>
+            <div class="slots-bar">
+                <div class="slot-card" id="slot-4"><div class="slot-title">SLOT 5</div><div class="slot-state">EMPTY</div></div>
+                <div class="slot-card" id="slot-5"><div class="slot-title">SLOT 6</div><div class="slot-state">EMPTY</div></div>
+            </div>
+        </div>
     </div>
 
     <div class="cams-container">
@@ -159,6 +193,7 @@
                 if (data.slots) {
                     data.slots.forEach((val, idx) => {
                         const card = document.getElementById(`slot-${idx}`);
+                        if (!card) return;
                         const stateEl = card.querySelector('.slot-state');
                         if (val === 1) {
                             card.classList.add('occupied');

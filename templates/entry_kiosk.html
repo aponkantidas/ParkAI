@@ -42,9 +42,10 @@
             color: #facc15;
             padding: 14px;
             border-radius: 10px;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             margin: 15px 0;
+            line-height: 1.4;
         }
         .rate-notice {
             background: rgba(56, 189, 248, 0.1);
@@ -98,10 +99,22 @@
                     } else {
                         statusEl.innerText = "Car Recognized!";
                         statusEl.style.color = "#22c55e";
-                        msgEl.style.color = "#facc15";
-                        msgEl.style.borderColor = "#facc15";
-                        msgEl.style.background = "rgba(250, 204, 21, 0.15)";
-                        msgEl.innerText = `Please park at SLOT ${data.slot}`;
+                        
+                        const isSecondFloor = data.slot >= 5;
+                        const floorName = data.floor || (isSecondFloor ? "Second Floor" : "Ground Floor");
+                        
+                        // Highlight Second Floor in cyan/blue and Ground Floor in yellow
+                        if (isSecondFloor) {
+                            msgEl.style.color = "#38bdf8";
+                            msgEl.style.borderColor = "#38bdf8";
+                            msgEl.style.background = "rgba(56, 189, 248, 0.15)";
+                        } else {
+                            msgEl.style.color = "#facc15";
+                            msgEl.style.borderColor = "#facc15";
+                            msgEl.style.background = "rgba(250, 204, 21, 0.15)";
+                        }
+
+                        msgEl.innerHTML = `Please park at<br><strong>${floorName} — SLOT ${data.slot}</strong>`;
                     }
 
                     setTimeout(() => {

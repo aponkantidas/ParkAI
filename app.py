@@ -21,7 +21,8 @@ latest_entry_event = None
 latest_exit_event = None
 
 # --- IOT PARKING SLOTS STATE (0 = Empty, 1 = Occupied via IR Sensors) ---
-parking_slots = [0, 0, 0, 0]
+# Indices 0-3: Ground Floor (Slots 1-4) | Indices 4-5: Second Floor (Slots 5-6)
+parking_slots = [0, 0, 0, 0, 0, 0]
 
 # --- LOAD MODELS ---
 print("[INFO] Loading YOLO and EasyOCR...")
@@ -78,11 +79,11 @@ def process_entry(plate_number):
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM parking_logs WHERE plate_number = ? AND status = 'ACTIVE'", (plate_number,))
     if not cursor.fetchone():
-        # Find first empty slot based on physical IR sensors
+        # Find first empty slot across all 6 bays (1-4 Ground Floor, 5-6 Second Floor)
         assigned_slot = None
-        for i in range(4):
+        for i in range(6):
             if parking_slots[i] == 0:
-                assigned_slot = i + 1  # Slot 1 to 4
+                assigned_slot = i + 1  # Slot 1 to 6
                 break
 
         if assigned_slot is None:
@@ -90,22 +91,29 @@ def process_entry(plate_number):
                 "id": int(time.time()),
                 "status": "FULL",
                 "plate": plate_number,
-                "slot": None
+                "slot": None,
+                "floor": None,
+                "slot_label": "PARKING FULL"
             }
             print(f"[ENTRY BLOCKED - FULL] Plate: {plate_number}")
             conn.close()
             return
 
+        floor_name = "Second Floor" if assigned_slot >= 5 else "Ground Floor"
+        slot_label = f"{floor_name} - Slot {assigned_slot}"
+
         now = datetime.now()
         cursor.execute("INSERT INTO parking_logs (plate_number, entry_time) VALUES (?, ?)", (plate_number, now))
         conn.commit()
         log_id = cursor.lastrowid
-        print(f"[ENTRY LOGGED] Plate: {plate_number} -> Assigned Slot {assigned_slot}")
+        print(f"[ENTRY LOGGED] Plate: {plate_number} -> {slot_label}")
         latest_entry_event = {
             "id": log_id,
             "status": "OPEN",
             "plate": plate_number,
             "slot": assigned_slot,
+            "floor": floor_name,
+            "slot_label": slot_label,
             "time": now.strftime("%H:%M:%S")
         }
     conn.close()
@@ -311,7 +319,7 @@ def process_mobile_payment():
 def update_slots():
     global parking_slots
     data = request.json
-    if data and "slots" in data and len(data["slots"]) == 4:
+    if data and "slots" in data and len(data["slots"]) == 6:
         parking_slots = data["slots"]
     return jsonify({"success": True, "slots": parking_slots})
 
